@@ -1,5 +1,4 @@
 import AppKit
-import RightNowCore
 import SwiftUI
 
 @MainActor
@@ -7,16 +6,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private let state = AppState()
     private let statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
     private let popover = NSPopover()
-    private var timer: Timer?
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         NSApp.setActivationPolicy(.accessory)
         configureStatusItem()
         AccessibilityPermission.requestIfNeeded()
-    }
-
-    func applicationWillTerminate(_ notification: Notification) {
-        timer?.invalidate()
     }
 
     private func configureStatusItem() {
@@ -26,21 +20,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
         if let button = statusItem.button {
             button.image = NSImage(systemSymbolName: "clock", accessibilityDescription: "RightNow")
-            button.imagePosition = .imageLeading
+            button.imagePosition = .imageOnly
             button.target = self
             button.action = #selector(togglePopover)
         }
-
-        updateStatusTitle()
-        timer = Timer.scheduledTimer(withTimeInterval: 1, repeats: true) { [weak self] _ in
-            Task { @MainActor in
-                self?.updateStatusTitle()
-            }
-        }
-    }
-
-    private func updateStatusTitle() {
-        statusItem.button?.title = " Now \(TimestampFormatter.string(format: "HH:mm"))"
     }
 
     @objc private func togglePopover() {
