@@ -13,15 +13,32 @@ macOS 菜单栏小工具：一键在任意输入框插入「当下时间」。
 - 🧩 **自定义时间格式**：基于 `DateFormatter` 模板，如 `yyyy-MM-dd HH:mm`，面板内提供常用 token 一键插入与实时预览。
 - 🚀 **登录时启动**：开关即可（`SMAppService`）。
 
-## 运行
+## 下载安装
 
-需要 macOS 13+。当前用 SwiftPM 手工打包：
+到 [Releases](https://github.com/paolulu/rightnow/releases) 下载最新的 `RightNow-x.y.z.dmg`，打开后把 **RightNow.app 拖进 Applications**。
+
+> ⚠️ 目前仅支持 **Apple Silicon（M 系列）** Mac，需要 macOS 13+。
+
+### 首次打开要手动放行一次
+
+这个 app 还没做 Apple 公证（notarization），所以首次打开会被系统拦下来提示"无法验证开发者"。放行一次即可，之后正常：
+
+- **方式一（推荐）**：双击打开被拦后，去 **系统设置 → 隐私与安全性**，下拉找到 RightNow 那条，点 **"仍要打开"**。
+- **方式二（终端）**：执行一次
+  ```bash
+  xattr -dr com.apple.quarantine /Applications/RightNow.app
+  ```
+
+放行后，**菜单栏右上角**会出现 `Now HH:mm`（这是个后台菜单栏应用，没有主窗口，Dock 里也不显示图标）。点它打开设置面板。
+
+## 从源码构建
+
+需要 macOS 13+ 与 Swift 工具链：
 
 ```bash
-./script/build_and_run.sh
+./script/build_and_run.sh          # 构建 + 打包 + 启动（开发用）
+./script/package_dmg.sh 0.1.0      # 出可分发的 DMG 到 dist/
 ```
-
-脚本会 `swift build`、打包成 `dist/RightNow.app` 并启动。
 
 ## 权限
 
