@@ -44,8 +44,8 @@ RightNow：macOS 菜单栏小工具，按全局快捷键 / 字符序列在任意
 
 ## 图标
 
-- 程序化生成：改 `script/AppIcon.swift`（CoreGraphics 绘制）→ 跑 `./script/make_icon.sh` → 生成 `Resources/AppIcon.icns`。
-- 两个打包脚本会自动把 icns 拷进 app 并在 Info.plist 设 `CFBundleIconFile`。
+- **App 图标**：主图源 `Resources/AppIconSource.png`（1024×1024）。换图标就替换它，再跑 `./script/make_icon.sh` 生成 `Resources/AppIcon.icns`。打包脚本把 icns 拷进 app 并在 Info.plist 设 `CFBundleIconFile`。
+- **菜单栏图标**：源 `Resources/MenuBarIconSource.png` → `swift script/TrimIcon.swift <源> Resources/MenuBarIcon.png 0.05`（裁掉透明边）。打包脚本把它拷进 app；`AppDelegate.statusBarImage()` 以彩色（`isTemplate=false`）加载。纯黑剪影类图标才用模板渲染。
 
 ## 代码约定 / 坑
 

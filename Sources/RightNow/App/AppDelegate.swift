@@ -19,11 +19,26 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         popover.contentViewController = NSHostingController(rootView: SettingsPanel(state: state))
 
         if let button = statusItem.button {
-            button.image = NSImage(systemSymbolName: "clock", accessibilityDescription: "RightNow")
+            button.image = statusBarImage()
             button.imagePosition = .imageOnly
             button.target = self
             button.action = #selector(togglePopover)
         }
+    }
+
+    /// 菜单栏图标：打包进 app 的键帽图（彩色，保留原色，非模板渲染）。
+    private func statusBarImage() -> NSImage? {
+        guard
+            let url = Bundle.main.url(forResource: "MenuBarIcon", withExtension: "png"),
+            let image = NSImage(contentsOf: url)
+        else {
+            return NSImage(systemSymbolName: "clock", accessibilityDescription: "RightNow")
+        }
+        let height: CGFloat = 18
+        let width = height * (image.size.width / max(image.size.height, 1))
+        image.size = NSSize(width: width, height: height)
+        image.isTemplate = false
+        return image
     }
 
     @objc private func togglePopover() {

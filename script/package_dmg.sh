@@ -37,8 +37,9 @@ cp "$BUILD_BINARY" "$APP_BINARY"
 chmod +x "$APP_BINARY"
 # 复制依赖的资源 bundle（如有）。
 find "$BUILD_DIR" -maxdepth 1 -name '*.bundle' -type d -exec cp -R {} "$APP_RESOURCES/" \;
-# App 图标。
+# App 图标 + 菜单栏图标。
 cp "$ROOT_DIR/Resources/AppIcon.icns" "$APP_RESOURCES/AppIcon.icns"
+cp "$ROOT_DIR/Resources/MenuBarIcon.png" "$APP_RESOURCES/MenuBarIcon.png"
 
 cat >"$INFO_PLIST" <<PLIST
 <?xml version="1.0" encoding="UTF-8"?>
