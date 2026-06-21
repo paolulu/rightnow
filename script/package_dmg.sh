@@ -23,11 +23,11 @@ INFO_PLIST="$APP_CONTENTS/Info.plist"
 DMG_ROOT="$DIST_DIR/dmg_root"
 DMG_PATH="$DIST_DIR/$APP_NAME-$VERSION.dmg"
 
-# 注意：通用二进制 (--arch arm64 --arch x86_64) 需要完整 Xcode 的 xcbuild，
-# 纯 Command Line Tools 环境不可用。这里用原生 release 构建（本机为 Apple Silicon → arm64）。
-echo "==> 构建 release（原生架构）"
-swift build -c release
-BUILD_DIR="$(swift build -c release --show-bin-path)"
+# 通用二进制（arm64 + x86_64），Intel 与 Apple Silicon 都能运行。
+# 需要完整 Xcode（提供 xcbuild）；纯 Command Line Tools 环境不可用。
+echo "==> 构建 release 通用二进制 (arm64 + x86_64)"
+swift build -c release --arch arm64 --arch x86_64
+BUILD_DIR="$(swift build -c release --arch arm64 --arch x86_64 --show-bin-path)"
 BUILD_BINARY="$BUILD_DIR/$APP_NAME"
 
 echo "==> 组装 $APP_NAME.app"

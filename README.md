@@ -17,7 +17,7 @@ macOS 菜单栏小工具：一键在任意输入框插入「当下时间」。
 
 到 [Releases](https://github.com/paolulu/rightnow/releases) 下载最新的 `RightNow-x.y.z.dmg`，打开后把 **RightNow.app 拖进 Applications**。
 
-> ⚠️ 目前仅支持 **Apple Silicon（M 系列）** Mac，需要 macOS 13+。
+> 支持 **Apple Silicon 与 Intel** Mac（通用二进制），需要 macOS 13+。
 
 ### 首次打开要手动放行一次
 
