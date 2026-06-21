@@ -3,9 +3,11 @@ set -euo pipefail
 
 # 构建 release 通用二进制（arm64 + x86_64），打包成可分发的 DMG。
 # 用法: ./script/package_dmg.sh [version]
-# 例:   ./script/package_dmg.sh 0.1.0
+# 例:   ./script/package_dmg.sh 0.0.100
+#
+# 版本方案：0.0.x 线性递增，每次改了功能就 +1（0.0.100 → 0.0.101 → ...）。
 
-VERSION="${1:-0.1.0}"
+VERSION="${1:-0.0.100}"
 APP_NAME="RightNow"
 BUNDLE_ID="com.xifuduo.RightNow"
 MIN_SYSTEM_VERSION="13.0"

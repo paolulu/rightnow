@@ -37,7 +37,7 @@ macOS 菜单栏小工具：一键在任意输入框插入「当下时间」。
 
 ```bash
 ./script/build_and_run.sh          # 构建 + 打包 + 启动（开发用）
-./script/package_dmg.sh 0.1.0      # 出可分发的 DMG 到 dist/
+./script/package_dmg.sh 0.0.100    # 出可分发的 DMG 到 dist/
 ```
 
 ## 权限
