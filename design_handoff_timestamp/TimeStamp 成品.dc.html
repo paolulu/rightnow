@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <style>
+    * { box-sizing: border-box; }
+  </style>
+</helmet>
+
+<div style="min-height:100vh; box-sizing:border-box; display:flex; align-items:center; justify-content:center; padding:64px; background:#e7e5df; font-family:-apple-system,BlinkMacSystemFont,'SF Pro Text','SF Pro Display','Helvetica Neue',sans-serif;">
+
+  <div style="width:430px;">
+    <!-- desktop + menubar -->
+    <div style="border-radius:12px; overflow:hidden; box-shadow:0 1px 3px rgba(0,0,0,.08); background:#fff;">
+      <div style="position:relative; height:150px; background:radial-gradient(120% 140% at 70% 0%,#5b8bd0 0%,#3d6cb0 38%,#274a86 72%,#1c2f5c 100%);">
+        <div style="position:absolute; inset:0 0 auto 0; height:28px; background:rgba(28,30,38,.42); backdrop-filter:blur(20px); display:flex; align-items:center; justify-content:flex-end; gap:16px; padding:0 14px;">
+          <span style="color:#fff; font-size:13px; opacity:.85;">􀙇</span>
+          <span style="color:#fff; font-size:13px; opacity:.85;">􀋦</span>
+          <span style="display:flex; align-items:center; gap:6px; background:rgba(255,255,255,.22); padding:3px 9px; border-radius:6px;">
+            <span style="color:#fff; font-size:13px;">􀐬</span>
+            <span style="color:#fff; font-size:12px; font-weight:600; font-variant-numeric:tabular-nums;">{{ clock }}</span>
+          </span>
+        </div>
+      </div>
+      <!-- panel -->
+      <div style="margin:-116px 16px 16px; border-radius:14px; background:rgba(245,245,247,.82); backdrop-filter:blur(40px) saturate(180%); box-shadow:0 14px 44px rgba(0,0,0,.28),0 0 0 .5px rgba(0,0,0,.12); overflow:hidden;">
+        <div style="padding:18px 18px 12px;">
+          <div style="font-size:11px; font-weight:600; color:#86868b; letter-spacing:.02em;">将插入</div>
+          <div style="font-size:29px; font-weight:600; color:#1d1d1f; font-variant-numeric:tabular-nums; margin-top:3px; letter-spacing:-.01em;">{{ preview }}</div>
+        </div>
+        <div style="height:.5px; background:rgba(0,0,0,.1);"></div>
+        <div style="display:flex; align-items:center; justify-content:space-between; padding:13px 18px;">
+          <div style="font-size:14px; color:#1d1d1f;">触发快捷键</div>
+          <div onClick="{{ record }}" style="{{ recStyle }}">{{ hotkey }}</div>
+        </div>
+        <div style="height:.5px; background:rgba(0,0,0,.07); margin:0 18px;"></div>
+        <div style="padding:13px 18px;">
+          <div style="font-size:14px; color:#1d1d1f; margin-bottom:8px;">时间格式</div>
+          <input value="{{ format }}" onChange="{{ setFormat }}" spellcheck="false" style="width:100%; font-family:'SF Mono',ui-monospace,Menlo,monospace; font-size:13px; color:#1d1d1f; background:rgba(255,255,255,.7); border:.5px solid rgba(0,0,0,.14); border-radius:8px; padding:9px 11px; outline:none;" />
+          <div style="display:flex; flex-wrap:wrap; gap:6px; margin-top:9px;">
+            <sc-for list="{{ chips }}" as="ch" hint-placeholder-count="6">
+              <span onClick="{{ ch.insert }}" style="font-family:'SF Mono',monospace; font-size:11px; color:#007aff; background:rgba(0,122,255,.1); border-radius:6px; padding:3px 8px; cursor:pointer;" style-hover="background:rgba(0,122,255,.2);">{{ ch.label }}</span>
+            </sc-for>
+          </div>
+          <div style="font-size:12px; color:#86868b; margin-top:9px;">预览 · <span style="color:#1d1d1f; font-variant-numeric:tabular-nums;">{{ preview }}</span></div>
+        </div>
+        <div style="height:.5px; background:rgba(0,0,0,.07); margin:0 18px;"></div>
+        <div style="display:flex; align-items:center; justify-content:space-between; padding:13px 18px;">
+          <div style="font-size:14px; color:#1d1d1f;">登录时启动</div>
+          <div onClick="{{ toggleLogin }}" style="{{ toggleStyle }}"><div style="{{ knobStyle }}"></div></div>
+        </div>
+        <div style="height:.5px; background:rgba(0,0,0,.1);"></div>
+        <div style="padding:11px 18px; display:flex; justify-content:space-between; align-items:center;">
+          <span style="font-size:13px; color:#86868b;">偏好设置…</span>
+          <span style="font-size:13px; color:#86868b;">退出 ⌘Q</span>
+        </div>
+      </div>
+    </div>
+    <div style="text-align:center; font-size:12px; color:#9b998f; margin-top:18px; line-height:1.5;">点「快捷键」后按下组合键录入 · 改格式串或点 chip 实时预览<br>界面原型 — 注册全局快捷键、向文本框打字需原生实现</div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+class Component extends DCLogic {
+  state = {
+    now: Date.now(),
+    recording: false,
+    format: 'yyyy-MM-dd HH:mm',
+    hotkey: ['⌘','⇧','T'],
+    login: true,
+  };
+
+  componentDidMount() {
+    this._timer = setInterval(() => this.setState({ now: Date.now() }), 1000);
+    this._onKey = (e) => {
+      if (!this.state.recording) return;
+      e.preventDefault();
+      const k = e.key;
+      if (['Shift','Meta','Alt','Control','CapsLock'].includes(k)) return;
+      const mods = [];
+      if (e.ctrlKey) mods.push('⌃');
+      if (e.altKey) mods.push('⌥');
+      if (e.shiftKey) mods.push('⇧');
+      if (e.metaKey) mods.push('⌘');
+      const key = k.length === 1 ? k.toUpperCase() : k.replace('Arrow','');
+      this.setState({ hotkey: [...mods, key], recording: false });
+    };
+    window.addEventListener('keydown', this._onKey, true);
+  }
+  componentWillUnmount() {
+    clearInterval(this._timer);
+    window.removeEventListener('keydown', this._onKey, true);
+  }
+
+  pad(n) { return String(n).padStart(2, '0'); }
+  fmt(format, d) {
+    const wkS = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+    const wkL = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+    const h12 = ((d.getHours() + 11) % 12) + 1;
+    const map = {
+      yyyy: d.getFullYear(), yy: String(d.getFullYear()).slice(-2),
+      MM: this.pad(d.getMonth() + 1), M: d.getMonth() + 1,
+      dd: this.pad(d.getDate()), d: d.getDate(),
+      HH: this.pad(d.getHours()), H: d.getHours(),
+      hh: this.pad(h12), h: h12,
+      mm: this.pad(d.getMinutes()), ss: this.pad(d.getSeconds()),
+      EEEE: wkL[d.getDay()], EEE: wkS[d.getDay()],
+      a: d.getHours() < 12 ? 'AM' : 'PM',
+    };
+    return String(format).replace(/yyyy|EEEE|EEE|MM|dd|HH|hh|mm|ss|yy|a|M|d|H|h/g, t => map[t]);
+  }
+
+  renderVals() {
+    const now = new Date(this.state.now);
+    const rec = this.state.recording;
+    const chips = ['yyyy','MM','dd','HH','mm','ss','EEE','a'].map(l => ({
+      label: l,
+      insert: () => this.setState(st => ({ format: st.format + l })),
+    }));
+    return {
+      clock: this.fmt('h:mm', now) + ' ' + (now.getHours() < 12 ? 'AM' : 'PM'),
+      preview: this.fmt(this.state.format, now),
+      format: this.state.format,
+      setFormat: (e) => this.setState({ format: e.target.value }),
+      hotkey: rec ? '按键…' : this.state.hotkey.join(''),
+      recStyle: {
+        fontSize: '13px', fontWeight: 600, padding: '5px 12px', borderRadius: '8px',
+        cursor: 'pointer', minWidth: '58px', textAlign: 'center', letterSpacing: '.04em',
+        background: rec ? '#007aff' : 'rgba(120,120,128,.16)',
+        color: rec ? '#fff' : '#1d1d1f',
+        boxShadow: rec ? '0 0 0 3px rgba(0,122,255,.25)' : 'none',
+      },
+      record: () => this.setState({ recording: true }),
+      chips,
+      login: this.state.login,
+      toggleLogin: () => this.setState(st => ({ login: !st.login })),
+      toggleStyle: { width: '40px', height: '24px', borderRadius: '13px', background: this.state.login ? '#34c759' : 'rgba(120,120,128,.3)', position: 'relative', cursor: 'pointer', transition: 'background .15s' },
+      knobStyle: { position: 'absolute', top: '2px', left: this.state.login ? '18px' : '2px', width: '20px', height: '20px', borderRadius: '50%', background: '#fff', boxShadow: '0 1px 3px rgba(0,0,0,.25)', transition: 'left .15s' },
+    };
+  }
+}
+</script>
+</body>
+</html>

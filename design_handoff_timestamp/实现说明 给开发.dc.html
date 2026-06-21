@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Newsreader:opsz,wght@6..72,400;6..72,500;6..72,600&display=swap" rel="stylesheet">
+  <style>
+    * { box-sizing: border-box; }
+    .code { font-family:'SF Mono',ui-monospace,Menlo,monospace; font-size:12.5px; line-height:1.65; color:#d4d4d4; background:#1e1e1f; border-radius:10px; padding:16px 18px; overflow-x:auto; white-space:pre; tab-size:2; }
+    .code .c { color:#6a9955; }
+    .code .k { color:#569cd6; }
+    .code .s { color:#ce9178; }
+    .code .f { color:#dcdcaa; }
+    .code .n { color:#b5cea8; }
+  </style>
+</helmet>
+
+<div style="min-height:100vh; box-sizing:border-box; background:#e7e5df; padding:56px 24px; font-family:-apple-system,BlinkMacSystemFont,'SF Pro Text','Helvetica Neue',sans-serif;">
+  <div style="max-width:760px; margin:0 auto; background:#fff; border-radius:4px; box-shadow:0 1px 3px rgba(0,0,0,.1); padding:64px 72px;">
+
+    <div style="border-bottom:1px solid #e5e3dd; padding-bottom:24px; margin-bottom:36px;">
+      <div style="font-size:12px; font-weight:600; letter-spacing:.1em; text-transform:uppercase; color:#a39f95;">开发实现说明 · macOS</div>
+      <h1 style="font-family:'Newsreader',serif; font-size:38px; font-weight:600; color:#1d1d1f; margin:10px 0 0; letter-spacing:-.01em;">TimeStamp — 按快捷键插入当前时间</h1>
+      <div style="font-size:15px; color:#6b6960; margin-top:10px; line-height:1.55;">把已定稿的设置面板原型，落地为真正可注册全局快捷键、向任意文本框输入时间的菜单栏小工具。提供两条路径：最快上手的 Hammerspoon，以及完整独立的原生 Swift App。</div>
+    </div>
+
+    <!-- 功能拆解 -->
+    <h2 style="font-family:'Newsreader',serif; font-size:24px; font-weight:600; color:#1d1d1f; margin:0 0 14px;">需要实现的三件事</h2>
+    <div style="display:flex; flex-direction:column; gap:12px; margin-bottom:40px;">
+      <div style="display:flex; gap:14px; align-items:flex-start; padding:14px 16px; background:#faf9f6; border-radius:9px;">
+        <div style="flex:none; width:24px; height:24px; border-radius:6px; background:#1d1d1f; color:#fff; font-size:13px; font-weight:600; display:flex; align-items:center; justify-content:center;">1</div>
+        <div><div style="font-size:15px; font-weight:600; color:#1d1d1f;">注册全局快捷键</div><div style="font-size:13.5px; color:#6b6960; margin-top:2px; line-height:1.5;">无论焦点在哪个 App，按下组合键（如 ⌘⇧T）都能触发。</div></div>
+      </div>
+      <div style="display:flex; gap:14px; align-items:flex-start; padding:14px 16px; background:#faf9f6; border-radius:9px;">
+        <div style="flex:none; width:24px; height:24px; border-radius:6px; background:#1d1d1f; color:#fff; font-size:13px; font-weight:600; display:flex; align-items:center; justify-content:center;">2</div>
+        <div><div style="font-size:15px; font-weight:600; color:#1d1d1f;">按格式生成时间字符串</div><div style="font-size:13.5px; color:#6b6960; margin-top:2px; line-height:1.5;">读取用户设置的格式串（yyyy-MM-dd HH:mm 等），格式化当前时间。</div></div>
+      </div>
+      <div style="display:flex; gap:14px; align-items:flex-start; padding:14px 16px; background:#faf9f6; border-radius:9px;">
+        <div style="flex:none; width:24px; height:24px; border-radius:6px; background:#1d1d1f; color:#fff; font-size:13px; font-weight:600; display:flex; align-items:center; justify-content:center;">3</div>
+        <div><div style="font-size:15px; font-weight:600; color:#1d1d1f;">把字符串送进当前文本框</div><div style="font-size:13.5px; color:#6b6960; margin-top:2px; line-height:1.5;">模拟键盘输入，或写入剪贴板后模拟 ⌘V 粘贴。需要「辅助功能」权限。</div></div>
+      </div>
+    </div>
+
+    <!-- 路径 A: Hammerspoon -->
+    <div style="display:flex; align-items:center; gap:10px; margin-bottom:6px;">
+      <span style="font-size:11px; font-weight:700; letter-spacing:.06em; color:#fff; background:#34c759; padding:3px 9px; border-radius:5px;">最快 · 约 10 分钟</span>
+    </div>
+    <h2 style="font-family:'Newsreader',serif; font-size:24px; font-weight:600; color:#1d1d1f; margin:6px 0 12px;">路径 A · Hammerspoon 脚本</h2>
+    <div style="font-size:14px; color:#4a483f; line-height:1.65; margin-bottom:14px;">适合自用、想立刻见效。安装 <a href="https://www.hammerspoon.org" style="color:#007aff; text-decoration:none;">Hammerspoon</a>（<span class="mono" style="font-family:monospace;">brew install --cask hammerspoon</span>），授予「辅助功能」权限，把下面内容粘进 <span style="font-family:monospace; font-size:13px;">~/.hammerspoon/init.lua</span>，菜单栏点 Reload Config 即可。</div>
+
+    <div class="code"><span class="c">-- ~/.hammerspoon/init.lua</span>
+<span class="c">-- 时间格式：用 strftime 占位符（%Y 年 %m 月 %d 日 %H 时 %M 分 %S 秒）</span>
+<span class="k">local</span> dateFormat = <span class="s">"%Y-%m-%d %H:%M"</span>
+
+<span class="c">-- 注册全局快捷键 ⌘⇧T</span>
+hs.hotkey.bind({<span class="s">"cmd"</span>, <span class="s">"shift"</span>}, <span class="s">"T"</span>, <span class="k">function</span>()
+  <span class="k">local</span> stamp = os.date(dateFormat)
+  <span class="c">-- 方式一：逐字符模拟输入（兼容性最好）</span>
+  hs.eventtap.keyStrokes(stamp)
+
+  <span class="c">-- 方式二（更快、适合长文本）：写剪贴板后模拟 ⌘V</span>
+  <span class="c">-- hs.pasteboard.setContents(stamp)</span>
+  <span class="c">-- hs.eventtap.keyStroke({"cmd"}, "V")</span>
+<span class="k">end</span>)
+
+hs.alert.show(<span class="s">"TimeStamp 已就绪 ⌘⇧T"</span>)</div>
+    <div style="font-size:13px; color:#8a877d; margin-top:10px; line-height:1.55;">改快捷键 → 改 bind 的修饰键和按键；改格式 → 改 dateFormat。<a href="https://strftime.org" style="color:#007aff; text-decoration:none;">strftime.org</a> 有全部占位符对照。</div>
+
+    <div style="height:1px; background:#e5e3dd; margin:44px 0;"></div>
+
+    <!-- 路径 B: Swift -->
+    <div style="display:flex; align-items:center; gap:10px; margin-bottom:6px;">
+      <span style="font-size:11px; font-weight:700; letter-spacing:.06em; color:#fff; background:#007aff; padding:3px 9px; border-radius:5px;">可分发 · 独立 App</span>
+    </div>
+    <h2 style="font-family:'Newsreader',serif; font-size:24px; font-weight:600; color:#1d1d1f; margin:6px 0 12px;">路径 B · 原生 Swift 菜单栏 App</h2>
+    <div style="font-size:14px; color:#4a483f; line-height:1.65; margin-bottom:14px;">适合做成能给别人用的成品，UI 即定稿的那个面板。技术选型：</div>
+    <ul style="font-size:14px; color:#4a483f; line-height:1.75; margin:0 0 18px; padding-left:20px;">
+      <li><b>菜单栏 + 面板</b>：<span style="font-family:monospace; font-size:13px;">MenuBarExtra</span>（SwiftUI，macOS 13+），面板用 <span style="font-family:monospace; font-size:13px;">.menuBarExtraStyle(.window)</span> 装定稿 UI。</li>
+      <li><b>全局快捷键</b>：用 <a href="https://github.com/sindresorhus/KeyboardShortcuts" style="color:#007aff; text-decoration:none;">KeyboardShortcuts</a> 库，自带录制控件，正好对应面板里的「点击录制」交互。</li>
+      <li><b>输入文本</b>：<span style="font-family:monospace; font-size:13px;">CGEvent</span> 模拟键盘，或写 <span style="font-family:monospace; font-size:13px;">NSPasteboard</span> + 模拟 ⌘V。需请求 <b>Accessibility</b> 权限。</li>
+      <li><b>格式化</b>：<span style="font-family:monospace; font-size:13px;">DateFormatter</span>，格式串与原型完全一致（yyyy/MM/dd/HH/mm/ss/EEE/a）。</li>
+    </ul>
+
+    <div style="font-size:13px; font-weight:600; color:#6b6960; margin:0 0 8px;">① 定义快捷键 + 监听</div>
+    <div class="code"><span class="k">import</span> SwiftUI
+<span class="k">import</span> KeyboardShortcuts
+
+<span class="k">extension</span> KeyboardShortcuts.Name {
+  <span class="k">static let</span> insertTimestamp = Self(<span class="s">"insertTimestamp"</span>,
+    default: .init(.t, modifiers: [.command, .shift]))   <span class="c">// ⌘⇧T</span>
+}
+
+<span class="k">final class</span> AppState: ObservableObject {
+  <span class="f">@AppStorage</span>(<span class="s">"dateFormat"</span>) <span class="k">var</span> dateFormat = <span class="s">"yyyy-MM-dd HH:mm"</span>
+
+  <span class="k">init</span>() {
+    KeyboardShortcuts.onKeyUp(<span class="k">for</span>: .insertTimestamp) { [weak self] <span class="k">in</span>
+      <span class="k">self</span>?.insertNow()
+    }
+  }
+
+  <span class="k">func</span> <span class="f">insertNow</span>() {
+    <span class="k">let</span> fmt = DateFormatter()
+    fmt.dateFormat = dateFormat
+    TextTyper.type(fmt.string(from: Date()))
+  }
+}
+</div>
+
+    <div style="font-size:13px; font-weight:600; color:#6b6960; margin:18px 0 8px;">② 输入文本（剪贴板 + 模拟 ⌘V，最稳）</div>
+    <div class="code"><span class="k">import</span> AppKit
+
+<span class="k">enum</span> TextTyper {
+  <span class="k">static func</span> <span class="f">type</span>(_ text: String) {
+    <span class="k">let</span> pb = NSPasteboard.general
+    <span class="k">let</span> saved = pb.string(forType: .string)   <span class="c">// 备份原剪贴板</span>
+    pb.clearContents()
+    pb.setString(text, forType: .string)
+
+    <span class="k">let</span> src = CGEventSource(stateID: .combinedSessionState)
+    <span class="k">let</span> vDown = CGEvent(keyboardEventSource: src, virtualKey: <span class="n">0x09</span>, keyDown: <span class="k">true</span>)!  <span class="c">// V</span>
+    <span class="k">let</span> vUp   = CGEvent(keyboardEventSource: src, virtualKey: <span class="n">0x09</span>, keyDown: <span class="k">false</span>)!
+    vDown.flags = .maskCommand
+    vUp.flags = .maskCommand
+    vDown.post(tap: .cgAnnotatedSessionEventTap)
+    vUp.post(tap: .cgAnnotatedSessionEventTap)
+
+    <span class="c">// 0.1s 后还原剪贴板</span>
+    DispatchQueue.main.asyncAfter(deadline: .now() + <span class="n">0.1</span>) {
+      pb.clearContents()
+      <span class="k">if let</span> saved { pb.setString(saved, forType: .string) }
+    }
+  }
+}</div>
+
+    <div style="font-size:13px; font-weight:600; color:#6b6960; margin:18px 0 8px;">③ 菜单栏入口 + 定稿面板</div>
+    <div class="code"><span class="f">@main</span>
+<span class="k">struct</span> TimeStampApp: App {
+  <span class="f">@StateObject</span> <span class="k">private var</span> state = AppState()
+
+  <span class="k">var</span> body: <span class="k">some</span> Scene {
+    MenuBarExtra(<span class="s">"TimeStamp"</span>, systemImage: <span class="s">"clock"</span>) {
+      SettingsPanel()                  <span class="c">// ← 定稿的那个面板 UI</span>
+        .environmentObject(state)
+    }
+    .menuBarExtraStyle(.window)        <span class="c">// 下拉成自定义面板</span>
+  }
+}</div>
+
+    <div style="background:#fff8ed; border:1px solid #f0dcc0; border-radius:9px; padding:14px 16px; margin-top:18px; display:flex; gap:11px; align-items:flex-start;">
+      <span style="font-size:15px;">⚠️</span>
+      <div style="font-size:13.5px; color:#7a5a32; line-height:1.6;"><b>必须申请「辅助功能」权限。</b>首次运行用 <span style="font-family:monospace; font-size:12.5px;">AXIsProcessTrustedWithOptions</span> 弹窗引导用户到 系统设置 › 隐私与安全性 › 辅助功能 勾选本 App，否则模拟键盘无效。分发时需在 Info.plist 说明用途。</div>
+    </div>
+
+    <div style="height:1px; background:#e5e3dd; margin:44px 0;"></div>
+
+    <!-- 面板与代码的对应关系 -->
+    <h2 style="font-family:'Newsreader',serif; font-size:24px; font-weight:600; color:#1d1d1f; margin:0 0 14px;">原型 ↔ 代码 对应</h2>
+    <div style="border:1px solid #e8e6e0; border-radius:10px; overflow:hidden; margin-bottom:40px;">
+      <div style="display:grid; grid-template-columns:1fr 1.4fr; background:#faf9f6; border-bottom:1px solid #e8e6e0;">
+        <div style="padding:10px 16px; font-size:12px; font-weight:600; color:#8a877d;">面板元素</div>
+        <div style="padding:10px 16px; font-size:12px; font-weight:600; color:#8a877d;">对应实现</div>
+      </div>
+      <div style="display:grid; grid-template-columns:1fr 1.4fr; border-bottom:1px solid #f0eee8;">
+        <div style="padding:11px 16px; font-size:13.5px; color:#1d1d1f;">触发快捷键（点击录制）</div>
+        <div style="padding:11px 16px; font-size:13px; color:#4a483f; font-family:monospace;">KeyboardShortcuts.Recorder</div>
+      </div>
+      <div style="display:grid; grid-template-columns:1fr 1.4fr; border-bottom:1px solid #f0eee8;">
+        <div style="padding:11px 16px; font-size:13.5px; color:#1d1d1f;">时间格式输入框 + chips</div>
+        <div style="padding:11px 16px; font-size:13px; color:#4a483f; font-family:monospace;">@AppStorage("dateFormat")</div>
+      </div>
+      <div style="display:grid; grid-template-columns:1fr 1.4fr; border-bottom:1px solid #f0eee8;">
+        <div style="padding:11px 16px; font-size:13.5px; color:#1d1d1f;">「将插入」实时预览</div>
+        <div style="padding:11px 16px; font-size:13px; color:#4a483f; font-family:monospace;">DateFormatter().string(from:)</div>
+      </div>
+      <div style="display:grid; grid-template-columns:1fr 1.4fr;">
+        <div style="padding:11px 16px; font-size:13.5px; color:#1d1d1f;">登录时启动开关</div>
+        <div style="padding:11px 16px; font-size:13px; color:#4a483f; font-family:monospace;">SMAppService.mainApp</div>
+      </div>
+    </div>
+
+    <div style="border-top:1px solid #e5e3dd; padding-top:20px; font-size:12.5px; color:#a39f95; line-height:1.6;">建议：先用路径 A 跑通逻辑确认手感，再用路径 B 套定稿 UI 做成品。两者格式串占位符不同——Hammerspoon 用 strftime（%Y），Swift 用 DateFormatter（yyyy），面板里展示的是 DateFormatter 风格。</div>
+
+  </div>
+</div></x-dc>
+</body>
+</html>
