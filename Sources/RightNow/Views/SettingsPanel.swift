@@ -4,8 +4,32 @@ import SwiftUI
 
 struct SettingsPanel: View {
     @ObservedObject var state: AppState
+    @State private var showingReleaseNotes = false
 
     var body: some View {
+        Group {
+            if showingReleaseNotes {
+                ReleaseNotesView(
+                    currentVersion: appVersion,
+                    onBack: { showingReleaseNotes = false },
+                    onOpenInBrowser: { openReleaseNotes() }
+                )
+            } else {
+                settingsContent
+            }
+        }
+        .frame(width: 398)
+        .background(.regularMaterial)
+        .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+        .shadow(color: .black.opacity(0.28), radius: 22, x: 0, y: 14)
+        .overlay {
+            RoundedRectangle(cornerRadius: 14, style: .continuous)
+                .stroke(.black.opacity(0.12), lineWidth: 0.5)
+        }
+        .padding(12)
+    }
+
+    private var settingsContent: some View {
         TimelineView(.periodic(from: .now, by: 1)) { context in
             VStack(spacing: 0) {
                 previewSection(date: context.date)
@@ -20,15 +44,6 @@ struct SettingsPanel: View {
                 separator()
                 footer
             }
-            .frame(width: 398)
-            .background(.regularMaterial)
-            .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
-            .shadow(color: .black.opacity(0.28), radius: 22, x: 0, y: 14)
-            .overlay {
-                RoundedRectangle(cornerRadius: 14, style: .continuous)
-                    .stroke(.black.opacity(0.12), lineWidth: 0.5)
-            }
-            .padding(12)
             .onAppear {
                 state.refreshLaunchAtLoginStatus()
             }
@@ -200,6 +215,14 @@ struct SettingsPanel: View {
 
             Spacer()
 
+            Button("v\(appVersion)") {
+                showingReleaseNotes = true
+            }
+            .buttonStyle(.plain)
+            .help("查看版本更新内容")
+
+            Spacer()
+
             Button("退出 ⌘Q") {
                 NSApplication.shared.terminate(nil)
             }
@@ -209,6 +232,15 @@ struct SettingsPanel: View {
         .foregroundStyle(.secondary)
         .padding(.horizontal, 18)
         .padding(.vertical, 11)
+    }
+
+    private var appVersion: String {
+        Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "dev"
+    }
+
+    private func openReleaseNotes() {
+        guard let url = URL(string: "https://github.com/paolulu/rightnow/releases") else { return }
+        NSWorkspace.shared.open(url)
     }
 
     private func separator() -> some View {

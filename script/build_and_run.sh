@@ -7,6 +7,9 @@ BUNDLE_ID="com.xifuduo.RightNow"
 MIN_SYSTEM_VERSION="13.0"
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+# 开发构建的版本号取最近的发布 tag（去掉前缀 v），没有则用 dev。
+VERSION="$(git -C "$ROOT_DIR" describe --tags --abbrev=0 2>/dev/null | sed 's/^v//')"
+VERSION="${VERSION:-dev}"
 DIST_DIR="$ROOT_DIR/dist"
 APP_BUNDLE="$DIST_DIR/$APP_NAME.app"
 APP_CONTENTS="$APP_BUNDLE/Contents"
@@ -43,6 +46,10 @@ cat >"$INFO_PLIST" <<PLIST
   <string>AppIcon</string>
   <key>CFBundleIdentifier</key>
   <string>$BUNDLE_ID</string>
+  <key>CFBundleShortVersionString</key>
+  <string>$VERSION</string>
+  <key>CFBundleVersion</key>
+  <string>$VERSION</string>
   <key>CFBundleName</key>
   <string>$APP_NAME</string>
   <key>CFBundlePackageType</key>
