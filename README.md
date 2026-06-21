@@ -37,8 +37,18 @@ macOS 菜单栏小工具：一键在任意输入框插入「当下时间」。
 
 ```bash
 ./script/build_and_run.sh          # 构建 + 打包 + 启动（开发用）
-./script/package_dmg.sh 0.0.100    # 出可分发的 DMG 到 dist/
+./script/package_dmg.sh 0.0.100    # 仅出可分发的 DMG 到 dist/
 ```
+
+### 发布新版本
+
+改完功能后，一条命令走完「打包 → 提交 → 推送 → 建 GitHub Release」：
+
+```bash
+./script/release.sh 0.0.101 "本次更新说明"
+```
+
+版本号用 `0.0.x` 线性递增，每改一次功能 +1。脚本会校验版本格式、是否在 main、版本号是否重复，并产出通用二进制（Apple Silicon + Intel）的 DMG。
 
 ## 权限
 
