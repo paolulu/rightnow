@@ -2,3 +2,8 @@
 .swiftpm/
 dist/
 .DS_Store
+
+# 本地资料 / 工具配置，不发布到 GitHub
+CHANGELOG.md
+design_handoff_timestamp/
+.codex/

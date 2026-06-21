@@ -67,8 +67,6 @@ Sources/
     Services/          文本插入 / 序列监听 / 辅助功能 / 登录启动
 ```
 
-详细的开发记录与设计取舍见 [CHANGELOG.md](CHANGELOG.md)。
-
 ## 依赖
 
 - [KeyboardShortcuts](https://github.com/sindresorhus/KeyboardShortcuts) —— 组合键录制。
