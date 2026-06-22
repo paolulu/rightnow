@@ -4,9 +4,9 @@ set -euo pipefail
 # 一键发布：校验 → 打包通用 DMG → 提交 → 推送 → 建 GitHub Release → 同步 tag。
 #
 # 用法: ./script/release.sh <version> "<更新说明>"
-# 例:   ./script/release.sh 0.0.101 "新增 xxx；修复 yyy"
+# 例:   ./script/release.sh 0.0.20 "新增 xxx；修复 yyy"
 #
-# 版本方案：0.0.x 线性递增，每次改了功能就 +1。
+# 版本方案：0.0.x 线性递增，每次改了功能就 +1，patch 保持两位数（如 0.0.20 → 0.0.21）。
 
 APP_NAME="RightNow"
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
@@ -17,12 +17,12 @@ NOTES="${2:-}"
 
 if [[ -z "$VERSION" || -z "$NOTES" ]]; then
   echo "用法: ./script/release.sh <version> \"<更新说明>\"" >&2
-  echo "例:   ./script/release.sh 0.0.101 \"新增 xxx；修复 yyy\"" >&2
+  echo "例:   ./script/release.sh 0.0.20 \"新增 xxx；修复 yyy\"" >&2
   exit 2
 fi
 
 if [[ ! "$VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
-  echo "✗ 版本号格式应为 主.次.修，例如 0.0.101（你给的是 '$VERSION'）" >&2
+  echo "✗ 版本号格式应为 主.次.修，例如 0.0.20（你给的是 '$VERSION'）" >&2
   exit 2
 fi
 

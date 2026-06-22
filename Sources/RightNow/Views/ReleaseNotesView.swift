@@ -2,8 +2,8 @@ import SwiftUI
 
 /// 一条版本更新记录（从 GitHub Releases 提炼出的简要说明）。
 struct VersionNote: Identifiable {
-    let id: String        // tag，如 "v0.0.102"
-    let version: String   // 显示用，如 "0.0.102"
+    let id: String        // tag，如 "v0.0.20"
+    let version: String   // 显示用，如 "0.0.20"
     let summary: String
     let dateText: String
 }

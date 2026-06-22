@@ -5,10 +5,7 @@ import SwiftUI
 private enum SettingsPanelMetrics {
     static let panelWidth: CGFloat = 344
     static let panelHeight: CGFloat = 476
-    static let controlInputWidth: CGFloat = 156
-    static let sequenceInputWidth: CGFloat = 112
-    static let shortcutRecorderWidth: CGFloat = 132
-    static let shortcutClearButtonWidth: CGFloat = 24
+    static let inputFieldWidth: CGFloat = 130
     static let inputHeight: CGFloat = 28
     static let inputCornerRadius: CGFloat = 6
     static let formatLabelWidth: CGFloat = 34
@@ -68,7 +65,6 @@ struct SettingsPanel: View {
                 sequenceSection
                 insetSeparator()
                 launchSection
-                Spacer(minLength: 0)
                 separator()
                 footer
             }
@@ -124,6 +120,7 @@ struct SettingsPanel: View {
         }
         .padding(.horizontal, 18)
         .padding(.vertical, 13)
+        .frame(maxHeight: .infinity, alignment: .center)
     }
 
     private var sequenceSection: some View {
@@ -132,7 +129,7 @@ struct SettingsPanel: View {
                 VStack(alignment: .leading, spacing: 2) {
                     Text("字符序列触发")
                         .font(.system(size: 14))
-                    Text("留空则关闭，依次按下即可触发。")
+                    Text("留空则关闭，依次按下也可触发。")
                         .font(.system(size: 11))
                         .foregroundStyle(.secondary)
                         .lineLimit(1)
@@ -146,7 +143,7 @@ struct SettingsPanel: View {
                 ))
                 .font(.system(size: 13, design: .monospaced))
                 .textFieldStyle(.plain)
-                .settingsInputChrome(width: SettingsPanelMetrics.sequenceInputWidth)
+                .settingsInputChrome(width: SettingsPanelMetrics.inputFieldWidth)
             }
 
         }
@@ -508,31 +505,15 @@ private struct ShortcutRecorderControl: View {
     }
 
     var body: some View {
-        HStack(spacing: 0) {
-            ShortcutRecorderField(for: name)
-                .frame(
-                    width: SettingsPanelMetrics.shortcutRecorderWidth,
-                    height: SettingsPanelMetrics.inputHeight
-                )
-
-            Button {
-                KeyboardShortcuts.setShortcut(nil, for: name)
-            } label: {
-                Image(systemName: "xmark.circle.fill")
-                    .font(.system(size: 13, weight: .semibold))
-                    .foregroundStyle(.secondary)
-                    .frame(
-                        width: SettingsPanelMetrics.shortcutClearButtonWidth,
-                        height: SettingsPanelMetrics.inputHeight
-                    )
-            }
-            .buttonStyle(.plain)
-            .help("清除快捷键")
-        }
-        .settingsInputChrome(
-            width: SettingsPanelMetrics.controlInputWidth,
-            horizontalPadding: 0
-        )
+        ShortcutRecorderField(for: name)
+            .frame(
+                width: SettingsPanelMetrics.inputFieldWidth,
+                height: SettingsPanelMetrics.inputHeight
+            )
+            .settingsInputChrome(
+                width: SettingsPanelMetrics.inputFieldWidth,
+                horizontalPadding: 0
+            )
     }
 }
 
@@ -543,15 +524,41 @@ private struct ShortcutRecorderField: NSViewRepresentable {
         self.name = name
     }
 
+    func makeCoordinator() -> Coordinator {
+        Coordinator(name: name)
+    }
+
     func makeNSView(context: Context) -> KeyboardShortcuts.RecorderCocoa {
-        let recorder = KeyboardShortcuts.RecorderCocoa(for: name)
+        let coordinator = context.coordinator
+        // 录制完成会回调 onChange，用它让清除命中区随快捷键一起出现。
+        let recorder = KeyboardShortcuts.RecorderCocoa(for: name) { shortcut in
+            MainActor.assumeIsolated {
+                coordinator.setClearHitViewHidden(shortcut == nil)
+            }
+        }
         configure(recorder)
+
+        // 库自带的 ✕ 在无边框样式下点击会被识别成点输入框（进入录制态），
+        // 所以保留它仅作显示，另叠一个透明命中视图在尾部真正接管点击 → 清除快捷键。
+        let hitView = ClearHitView()
+        hitView.translatesAutoresizingMaskIntoConstraints = false
+        hitView.onClick = { [weak coordinator] in coordinator?.clear() }
+        recorder.addSubview(hitView)
+        NSLayoutConstraint.activate([
+            hitView.trailingAnchor.constraint(equalTo: recorder.trailingAnchor),
+            hitView.topAnchor.constraint(equalTo: recorder.topAnchor),
+            hitView.bottomAnchor.constraint(equalTo: recorder.bottomAnchor),
+            hitView.widthAnchor.constraint(equalToConstant: 24)
+        ])
+
+        coordinator.clearHitView = hitView
+        coordinator.setClearHitViewHidden(KeyboardShortcuts.getShortcut(for: name) == nil)
         return recorder
     }
 
     func updateNSView(_ nsView: KeyboardShortcuts.RecorderCocoa, context: Context) {
-        nsView.shortcutName = name
         configure(nsView)
+        context.coordinator.setClearHitViewHidden(KeyboardShortcuts.getShortcut(for: name) == nil)
     }
 
     private func configure(_ recorder: KeyboardShortcuts.RecorderCocoa) {
@@ -561,7 +568,39 @@ private struct ShortcutRecorderField: NSViewRepresentable {
         recorder.controlSize = .small
         recorder.font = .systemFont(ofSize: 13)
         recorder.alignment = .center
-        (recorder.cell as? NSSearchFieldCell)?.cancelButtonCell = nil
+    }
+
+    @MainActor
+    final class Coordinator: NSObject {
+        let name: KeyboardShortcuts.Name
+        weak var clearHitView: NSView?
+
+        init(name: KeyboardShortcuts.Name) {
+            self.name = name
+        }
+
+        func setClearHitViewHidden(_ hidden: Bool) {
+            clearHitView?.isHidden = hidden
+        }
+
+        func clear() {
+            KeyboardShortcuts.setShortcut(nil, for: name)
+            setClearHitViewHidden(true)
+        }
+    }
+}
+
+/// 透明的点击命中区：覆盖在录制框尾部、库自带 ✕ 的位置上，
+/// 把点击从录制框本体接管过来用于清除快捷键（hitTest 为几何判定，透明也能接事件）。
+private final class ClearHitView: NSView {
+    var onClick: (@MainActor () -> Void)?
+
+    override func mouseDown(with event: NSEvent) {
+        onClick?()
+    }
+
+    override func resetCursorRects() {
+        addCursorRect(bounds, cursor: .arrow)
     }
 }
 
