@@ -6,7 +6,6 @@ import RightNowCore
 final class AppState: ObservableObject {
     private enum Keys {
         static let dateFormat = "dateFormat"
-        static let sequenceTriggerEnabled = "sequenceTriggerEnabled"
         static let sequenceTrigger = "sequenceTrigger"
     }
 
@@ -18,14 +17,6 @@ final class AppState: ObservableObject {
     @Published var dateFormat: String {
         didSet {
             defaults.set(dateFormat, forKey: Keys.dateFormat)
-        }
-    }
-
-    /// 是否启用“依次按字符”触发（例如先按 `=` 再按 `n`）。
-    @Published var sequenceTriggerEnabled: Bool {
-        didSet {
-            defaults.set(sequenceTriggerEnabled, forKey: Keys.sequenceTriggerEnabled)
-            applySequenceTrigger()
         }
     }
 
@@ -43,7 +34,6 @@ final class AppState: ObservableObject {
     init(defaults: UserDefaults = .standard) {
         self.defaults = defaults
         self.dateFormat = defaults.string(forKey: Keys.dateFormat) ?? TimestampFormatter.defaultFormat
-        self.sequenceTriggerEnabled = defaults.object(forKey: Keys.sequenceTriggerEnabled) as? Bool ?? true
         self.sequenceTrigger = defaults.string(forKey: Keys.sequenceTrigger) ?? Self.defaultSequenceTrigger
         self.launchAtLoginEnabled = LaunchAtLoginService.isEnabled
 
@@ -58,7 +48,7 @@ final class AppState: ObservableObject {
     }
 
     private func applySequenceTrigger() {
-        if sequenceTriggerEnabled && !sequenceTrigger.isEmpty {
+        if !sequenceTrigger.isEmpty {
             sequenceService.start(trigger: sequenceTrigger)
         } else {
             sequenceService.stop()
@@ -71,6 +61,10 @@ final class AppState: ObservableObject {
 
     func appendToken(_ token: String) {
         dateFormat += token
+    }
+
+    func resetDateFormat() {
+        dateFormat = TimestampFormatter.defaultFormat
     }
 
     func insertCurrentTimestamp(deletingBackward backspaceCount: Int = 0) {

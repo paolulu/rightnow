@@ -1,13 +1,16 @@
 import Foundation
 
 public enum TimestampFormatter {
-    public static let defaultFormat = "yyyy-MM-dd HH:mm"
+    public static let defaultFormat = "yyyy-MMdd-HHmm"
 
     public static let suggestedTokens = [
         "yyyy",
+        "-",
         "MM",
         "dd",
+        " ",
         "HH",
+        ":",
         "mm",
         "ss",
         "EEE",

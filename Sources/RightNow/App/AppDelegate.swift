@@ -7,15 +7,27 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private let statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
     private let popover = NSPopover()
 
+#if DEBUG
+    private var previewWindow: NSWindow?
+#endif
+
     func applicationDidFinishLaunching(_ notification: Notification) {
+#if DEBUG
+        NSApp.setActivationPolicy(.regular)
+#else
         NSApp.setActivationPolicy(.accessory)
+#endif
         configureStatusItem()
         AccessibilityPermission.requestIfNeeded()
+
+#if DEBUG
+        showDevelopmentPreviewWindow()
+#endif
     }
 
     private func configureStatusItem() {
         popover.behavior = .transient
-        popover.contentSize = NSSize(width: 430, height: 540)
+        popover.contentSize = NSSize(width: 344, height: 476)
         popover.contentViewController = NSHostingController(rootView: SettingsPanel(state: state))
 
         if let button = statusItem.button {
@@ -50,7 +62,32 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             popover.performClose(nil)
         } else {
             popover.show(relativeTo: button.bounds, of: button, preferredEdge: .minY)
-            popover.contentViewController?.view.window?.makeKey()
+            if let window = popover.contentViewController?.view.window {
+                window.makeKey()
+                DispatchQueue.main.async { [weak window] in
+                    window?.makeFirstResponder(nil)
+                }
+            }
         }
     }
+
+#if DEBUG
+    private func showDevelopmentPreviewWindow() {
+        let contentSize = NSSize(width: 344, height: 476)
+        let window = NSWindow(
+            contentRect: NSRect(origin: .zero, size: contentSize),
+            styleMask: [.titled, .closable, .miniaturizable],
+            backing: .buffered,
+            defer: false
+        )
+        window.title = "RightNow Preview"
+        window.contentView = NSHostingView(rootView: SettingsPanel(state: state))
+        window.center()
+        window.isReleasedWhenClosed = false
+        window.makeKeyAndOrderFront(nil)
+        previewWindow = window
+
+        NSApp.activate(ignoringOtherApps: true)
+    }
+#endif
 }

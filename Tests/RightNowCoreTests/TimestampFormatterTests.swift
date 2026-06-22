@@ -41,16 +41,19 @@ struct TimestampFormatterTests {
             locale: Locale(identifier: "en_US_POSIX")
         )
 
-        #expect(output == "1970-01-01 00:00")
+        #expect(output == "1970-0101-0000")
     }
 
     @Test("exposes the format tokens shown in the settings panel")
     func exposesPanelTokens() {
         #expect(TimestampFormatter.suggestedTokens == [
             "yyyy",
+            "-",
             "MM",
             "dd",
+            " ",
             "HH",
+            ":",
             "mm",
             "ss",
             "EEE",
